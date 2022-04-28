@@ -74,7 +74,39 @@ serviceAccount:
 #   failureThreshold: 30
 #   periodSeconds: 10
 
+# Overriding DB values for mongodb
+# TODO - pull sc-db dynamically from umbrella
+# * NOTE: storageClass must be set to "" to use default
+mongodb:
+  global:
+    storageClass: ""
+  auth:
+    enabled: true
+    usernames:
+      - "poke-api"
+    databases:
+      - "poke-api"
+    existingSecret: "poke-api-mongodb"
+  service:
+    port: 27017
+  # Required to remove problematic affinity settings
+  podAntiAffinityPreset: ""
+
 # Unused values
+
+# TODO - get this working using a relevant provisioner
+storageClass:
+  # Specifies whether a storage class should be created
+  create: false
+  # name: "sc-db"
+  # annotations: {}
+  # apiVersion: ""
+  # defaultClass: false
+  # provisioner: ""
+  # allowVolumeExpansion: true
+  # volumeBindingMode: "WaitForFirstConsumer"
+  # reclaimPolicy: "Retain"
+  # parameters: {}
 
 imagePullSecrets: []
 nameOverride: ""

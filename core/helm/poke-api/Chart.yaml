@@ -11,3 +11,10 @@ dependencies:
     tags:
       - library
       - shared
+  # https://artifacthub.io/packages/helm/bitnami/mongodb
+  - name: mongodb
+    repository: https://charts.bitnami.com/bitnami
+    version: ~11.1.10
+    tags:
+      - database
+      - mongodb
