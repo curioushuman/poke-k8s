@@ -1,0 +1,29 @@
+{{- define "poke-lib.storageclass.tpl" -}}
+apiVersion: {{ template "poke-lib.storageClassApiVersion" }}
+kind: StorageClass
+metadata:
+  name: {{ template "poke-lib.storageClassName" . }}
+  labels:
+    {{- include "poke-lib.labels" . | nindent 4 }}
+  {{- with .Values.storageClass.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- if .Values.storageClass.defaultClass }}
+    storageclass.kubernetes.io/is-default-class: "true"
+{{- end }}
+  {{- include "poke-lib.namespace" . | nindent 2 }}
+provisioner: {{ template "poke-lib.storageClassProvisioner" . }}
+allowVolumeExpansion: {{ template "poke-lib.storageClassVolumeExpansion" . }}
+volumeBindingMode: {{ template "poke-lib.storageClassVolumeBinding" . }}
+reclaimPolicy: {{ template "poke-lib.storageClassReclaimPolicy" . }}
+{{- if .Values.parameters }}
+parameters:
+  {{- range $key, $value := .Values.storageClass.parameters }}
+  {{ $key }}: {{ $value }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- define "poke-lib.storageclass" -}}
+{{- include "poke-lib.util.merge" (append . "poke-lib.storageclass.tpl") -}}
+{{- end -}}

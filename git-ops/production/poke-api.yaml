@@ -1,19 +1,23 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: argo-events
+  name: poke-api
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: production
   source:
-    path: infra/argo-events
-    repoURL: https://github.com/curioushuman/poke-k8s
+    path: core/poke-api/overlays/production
+    repoURL: https://github.com/curioushuman/poke-k8s.git
     targetRevision: HEAD
+    kustomize:
+      # https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/images/
+      images:
+      - curioushuman/poke-api:1.1.4
   destination:
     server: https://kubernetes.default.svc
-    namespace: argo-events
+    namespace: production
   syncPolicy:
     automated:
       selfHeal: true

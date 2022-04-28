@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Sensor
 metadata:
-  name: github-rbc
+  name: github-poke
 spec:
   template:
     serviceAccountName: argo-events-sa
   dependencies:
-    - name: github-rbc-eventsource
-      eventSourceName: github-rbc
-      eventName: rbc-event
+    - name: github-poke-eventsource
+      eventSourceName: github-poke
+      eventName: poke-event
   triggers:
   - template:
-      name: github-rbc-trigger
+      name: github-poke-trigger
       k8s:
         group: ""
         version: v1
@@ -22,9 +22,9 @@ spec:
             apiVersion: v1
             kind: Pod
             metadata:
-              generateName: github-rbc-trigger-
+              generateName: github-poke-trigger-
               labels:
-                app: github-rbc-trigger
+                app: github-poke-trigger
             spec:
               containers:
               - name: hello
@@ -34,6 +34,6 @@ spec:
               restartPolicy: Never
         parameters:
           - src:
-              dependencyName: github-rbc-source
+              dependencyName: github-poke-source
               dataKey: body.repository.git_url
             dest: spec.containers.0.args.1

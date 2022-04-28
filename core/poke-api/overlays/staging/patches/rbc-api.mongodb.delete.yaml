@@ -1,0 +1,6 @@
+$patch: delete
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: poke-api-mongodb
+  namespace: poke-dev

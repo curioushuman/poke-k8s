@@ -11,7 +11,7 @@ spec:
   project: production
   source:
     path: git-ops/production
-    repoURL: https://github.com/curioushuman/rbc-k8s.git
+    repoURL: https://github.com/curioushuman/poke-k8s.git
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
@@ -34,7 +34,7 @@ spec:
   project: staging
   source:
     path: git-ops/staging
-    repoURL: https://github.com/curioushuman/rbc-k8s.git
+    repoURL: https://github.com/curioushuman/poke-k8s.git
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc

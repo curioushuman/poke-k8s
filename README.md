@@ -1,4 +1,4 @@
-# RBC Kubernetes
+# poke Kubernetes
 
 This is for a personal project, so the README is largely geared towards myself (or future team members). If you find this useful, hooray, I hope I've kept the documentation generic enough you can make sense of it.
 
@@ -62,7 +62,6 @@ $ helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
 ### Create development cluster
 
 Currently I'm using Docker Desktop. Use what you like.
-
 
 ### Connect to cloud cluster
 
@@ -169,7 +168,7 @@ $ helm ls -n cert-manager
 This one was tricky, but the result is stored in the values.yaml of our wrapper chart for ArgoCD. Some key points:
 
 - `fullnameOverride` required
-  - By including ArgoCD as dependency broke things like service endpoints
+  - Including ArgoCD as dependency broke things like service endpoints
   - Using fullnameOverride reinstates the name Argo expects
 - TLS/certificates
   - This was a real struggle
@@ -209,7 +208,7 @@ $ argocd login \
   --username admin \
   --password $ARGO_PASS_OLD \
   --grpc-web \
-  argocd.curiouscommunities.net
+  argocd.curioushuman.com.au
 # Update the password to something different to the original
 $ argocd account update-password \
   --current-password $ARGO_PASS_OLD \
@@ -229,18 +228,18 @@ $ kubectl apply -f git-ops/apps.yaml
 
 ## Configure local domain
 
-Local k8s configuration uses *rbc.dev* in it's configurations. You'll need to tell your computer that this points at *localhost*.
+Local k8s configuration uses *poke.dev* in it's configurations. You'll need to tell your computer that this points at *localhost*.
 
 ```bash
 # Edit your hosts file
 $ sudo vim /etc/hosts
 # Add the following line (without the #)
-# 127.0.0.1 rbc.dev
+# 127.0.0.1 poke.dev
 ```
 
 # Development
 
-*Note:* where I have used `-n rbc-dev`, use the relevant namespace for the cluster you're working in e.g. `staging`, `production`, `your-namespace`
+*Note:* where I have used `-n poke-dev`, use the relevant namespace for the cluster you're working in e.g. `staging`, `production`, `your-namespace`
 
 ## Skaffold & Helm
 
@@ -252,19 +251,19 @@ Use the following to review logs for your deployed pods:
 
 ```bash
 # Review logs for your pods
-$ kubectl logs deployment/rbc-api -n rbc-dev
+$ kubectl logs deployment/poke-api -n poke-dev
 
 # Review logs for sealed secrets
 # first get the generated pod name for sealed secrets controller
-$ kubectl get pods -n rbc-dev
+$ kubectl get pods -n poke-dev
 # Then run logs
-$ kubectl logs -f rbc-sealed-secrets-<generated_name> -n rbc-dev
+$ kubectl logs -f poke-sealed-secrets-<generated_name> -n poke-dev
 
 # Review logs for ingress
 # first get the generated pod name for ingress controller
 $ kubectl get pods
 # Then run logs
-$ kubectl logs rbc-nginx-ingress-<generated_name>
+$ kubectl logs poke-nginx-ingress-<generated_name>
 ```
 
 ## Troubleshooting K8s
@@ -281,11 +280,11 @@ The following commands can be quite useful to troubleshoot:
 
 ```bash
 # Check on all the things
-$ kubectl get all -n rbc-dev
+$ kubectl get all -n poke-dev
 
 # Check on a specific thing
-# kubectl describe <resource_name> <specific_resource_name> -n rbc-dev
-$ kubectl describe pod rbc-api-55c76f6f7b-f769l -n rbc-dev
+# kubectl describe <resource_name> <specific_resource_name> -n poke-dev
+$ kubectl describe pod poke-api-55c76f6f7b-f769l -n poke-dev
 ```
 
 ### Ingress issues
@@ -332,11 +331,11 @@ Kustomize is better for multi-environment management. Our ArgoCD setup monitors 
 
 ```bash
 # Output helm charts as YAML
-$ helm template rbc ./core/helm/rbc-api --skip-tests -n production > ./core/rbc-api/base/all.yaml
+$ helm template poke ./core/helm/poke-api --skip-tests -n production > ./core/poke-api/base/all.yaml
 # Make any changes via Kustomize that you need to
 # Test the kustomize output (even if you don't change Kustomize config)
 # -o outputs to file
-$ kustomize build core/rbc-api/overlays/production \
+$ kustomize build core/poke-api/overlays/production \
   -o k-test.yaml
 ```
 
@@ -487,8 +486,8 @@ $ skaffold dev
 # 2. Create a new SS using kubeseal
 # Note: to save a whole lot of hassle, we've set scope to be cluster-wide
 $ kubectl \
-  --namespace rbc-dev \
-  create secret generic rbc-api-super-secret \
+  --namespace poke-dev \
+  create secret generic poke-api-super-secret \
   --dry-run=client \
   --from-literal username='jake_blues' \
   --from-literal password='jolietIsMyName' \
@@ -500,8 +499,8 @@ $ kubectl \
 
 # MongoDb specific secret requirements
 $ kubectl \
-  --namespace rbc-dev \
-  create secret generic rbc-api-mongodb \
+  --namespace poke-dev \
+  create secret generic poke-api-mongodb \
   --dry-run=client \
   --from-literal mongodb-passwords='pa$$word' \
   --from-literal mongodb-root-password='r00tPa$$word' \
@@ -510,7 +509,7 @@ $ kubectl \
   | kubeseal \
   --controller-namespace=argocd \
   --controller-name=sealed-secrets \
-  --format yaml > rbc-api-access-mongodb.yaml
+  --format yaml > poke-api-access-mongodb.yaml
 # Then you'll need to copy the contents of output into the relevant file
 ```
 
@@ -520,7 +519,7 @@ Yes, but no. The following outputs to multiple files, but it places them in a di
 
 ```bash
 # From root
-$ helm template rbc ./core/helm/rbc --skip-tests  -n production --output-dir ./base
+$ helm template poke ./core/helm/poke --skip-tests  -n production --output-dir ./base
 ```
 
 It would be nicer if things were in separate files, but Helm doesn't offer anything in core or plugins (apart from the above). The following includes a bash file example, but the comments RE risk of file overwrite are 100% correct. Will look at this another day:

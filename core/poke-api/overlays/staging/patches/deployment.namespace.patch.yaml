@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: poke-poke-api
+spec:
+  template:
+    spec:
+      containers:
+      - name: poke-api
+        env:
+        - name: POKE_RELEASE_NAMESPACE
+          value: staging

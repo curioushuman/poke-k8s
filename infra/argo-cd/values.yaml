@@ -9,7 +9,7 @@ argo-cd:
     # * To run ArgoCD without TLS comment out server.certificate
     certificate:
       enabled: true
-      domain: argocd.curiouscommunities.net
+      domain: argocd.curioushuman.com.au
       issuer:
         kind: ClusterIssuer
         name: letsencrypt-argocd
@@ -24,7 +24,7 @@ argo-cd:
         - id: argo-workflows-sso
           name: Argo Workflow
           redirectURIs:
-            - https://argo-workflows.curiouscommunities.net/oauth2/callback
+            - https://argo-workflows.curioushuman.com.au/oauth2/callback
           secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET
 
   dex:
