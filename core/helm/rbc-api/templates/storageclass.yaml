@@ -1,0 +1,5 @@
+{{- if .Values.storageClass.enabled -}}
+{{- include "rbc-lib.storageclass" (list . "rbc.storageclass") -}}
+{{- end }}
+{{- define "rbc.storageclass" -}}
+{{- end -}}

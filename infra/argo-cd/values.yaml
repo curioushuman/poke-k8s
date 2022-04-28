@@ -1,0 +1,38 @@
+argo-cd:
+  # * Including ArgoCD as dependency in wrapper chart messes with naming
+  # We fix it by overriding the fullname with what it should be
+  fullnameOverride: argocd
+  controller:
+    args:
+      repoServerTimeoutSeconds: 300
+  server:
+    # * To run ArgoCD without TLS comment out server.certificate
+    certificate:
+      enabled: true
+      domain: argocd.curiouscommunities.net
+      issuer:
+        kind: ClusterIssuer
+        name: letsencrypt-argocd
+    # * AND uncomment the below.
+    # You'll also find the insecure version of the ingress
+    # in the ingress.yaml file.
+    # extraArgs:
+    #   - --insecure
+    config:
+      dex.config: |
+        staticClients:
+        - id: argo-workflows-sso
+          name: Argo Workflow
+          redirectURIs:
+            - https://argo-workflows.curiouscommunities.net/oauth2/callback
+          secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET
+
+  dex:
+    # image:
+    #   tag: v2.23.0
+    env:
+      - name: ARGO_WORKFLOWS_SSO_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: argo-workflows-sso
+            key: client-secret

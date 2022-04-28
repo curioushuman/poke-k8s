@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rbc-rbc-api
+spec:
+  template:
+    spec:
+      containers:
+      - name: rbc-api
+        env:
+        - name: RBC_DEBUG
+          value: "false"

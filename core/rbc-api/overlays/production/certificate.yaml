@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: rbc-certificate
+  # Namespace will be added by ArgoCD
+  # namespace: argocd
+spec:
+  dnsNames:
+    - api.curiouscommunities.net
+  secretName: letsencrypt-rbc-secret
+  issuerRef:
+    name: letsencrypt-rbc
+    kind: ClusterIssuer

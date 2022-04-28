@@ -1,0 +1,5 @@
+# sealed-secrets:
+# Namespace should in fact be set via
+# - helm upgrade/install (locally)
+# - ArgoCD application (cloud)
+#   namespace: argocd

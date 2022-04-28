@@ -1,0 +1,5 @@
+apiVersion: v2
+name: rbc-lib
+description: Library of helpers for RbC ecosystem
+type: library
+version: 0.1.17

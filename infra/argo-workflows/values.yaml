@@ -1,0 +1,31 @@
+argo-workflows:
+  workflow:
+    serviceAccount:
+      create: true
+
+  server:
+    extraArgs:
+    - --auth-mode=sso
+    ingress:
+      enabled: true
+      ingressClassName: "nginx"
+      hosts:
+        - argo-workflows.curiouscommunities.net
+    ## https://argoproj.github.io/argo-workflows/tls/
+    secure: true
+    sso:
+      issuer: https://argocd.curiouscommunities.net/api/dex
+      # sessionExpiry defines how long your login is valid for in hours. (optional, default: 10h)
+      sessionExpiry: 240h
+      clientId:
+        name: argo-workflows-sso
+        key: client-id
+      clientSecret:
+        name: argo-workflows-sso
+        key: client-secret
+      redirectUrl: https://argo-workflows.curiouscommunities.net/oauth2/callback
+      rbac:
+        enabled: true
+        secretWhitelist: []
+      scopes:
+      - groups
