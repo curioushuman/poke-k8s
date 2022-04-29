@@ -1,0 +1,9 @@
+dependencies:
+- name: poke-lib
+  repository: file://../poke-lib
+  version: 0.0.1
+- name: mongodb
+  repository: https://charts.bitnami.com/bitnami
+  version: 11.1.10
+digest: sha256:aa7193c40814b0fd7bb3eef4fe26d26ff23dac1cce164cbdaddbdf9fcb669288
+generated: "2022-04-29T09:57:09.071629+10:00"

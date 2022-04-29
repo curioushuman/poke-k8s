@@ -39,7 +39,7 @@ ingress:
   hosts:
     # ! Updated in kustomization
     # - host: poke-api.curioushuman.com.au
-    - host: poke.dev
+    - host: poke-api.dev
       paths:
         - path: /api/?(.*)
           pathType: Prefix
