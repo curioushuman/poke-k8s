@@ -136,7 +136,7 @@ $ helm dep update infra/sealed-secrets
 $ helm upgrade --install sealed-secrets infra/sealed-secrets  \
   --namespace argocd \
   --create-namespace \
-  -f infra/sealed-secrets/values-local.yaml
+  -f infra/sealed-secrets/values.yaml
 # Check install was successful
 $ kubectl get all -n argocd
 ```
@@ -225,6 +225,35 @@ $ kubectl apply -f git-ops/apps.yaml
 ```
 
 # Setup - other
+
+## Create your sealed secrets for MongoDb
+
+You need to create separate secrets for local, staging and production as sealed-secrets hash is tied to the namespace. Use the below as the basis, and update the namespace and the filename for the three versions:
+
+```bash
+# MongoDb sealed secret for local
+$ kubectl \
+  --namespace poke-dev \
+  create secret generic poke-api-mongodb \
+  --dry-run=client \
+  --from-literal mongodb-passwords='pa$$word' \
+  --from-literal mongodb-root-password='r00tPa$$word' \
+  --from-literal mongodb-replica-set-key='somethingLongBase64' \
+  --output yaml \
+  | kubeseal \
+  --controller-namespace=argocd \
+  --controller-name=sealed-secrets \
+  --format yaml > ./core/helm/poke-api/templates/secrets/poke-api-mongodb.yaml
+```
+
+Namespace and paths for staging and production are as follows:
+
+- Staging
+  - staging
+  - ./core/poke-api/overlays/staging/poke-api-mongodb.staging.yaml
+- Production
+  - production
+  - ./core/poke-api/overlays/production/poke-api-mongodb.production.yaml
 
 ## Configure local domain
 
@@ -496,21 +525,6 @@ $ kubectl \
   --controller-namespace=argocd \
   --controller-name=sealed-secrets \
   --format yaml > path-to-secret-file.yaml
-
-# MongoDb specific secret requirements
-$ kubectl \
-  --namespace poke-dev \
-  create secret generic poke-api-mongodb \
-  --dry-run=client \
-  --from-literal mongodb-passwords='pa$$word' \
-  --from-literal mongodb-root-password='r00tPa$$word' \
-  --from-literal mongodb-replica-set-key='somethingLongBase64' \
-  --output yaml \
-  | kubeseal \
-  --controller-namespace=argocd \
-  --controller-name=sealed-secrets \
-  --format yaml > poke-api-access-mongodb.yaml
-# Then you'll need to copy the contents of output into the relevant file
 ```
 
 ## Can Helm output multiple YAML files?
