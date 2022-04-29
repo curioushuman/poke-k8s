@@ -1,0 +1,325 @@
+---
+# Source: poke-api/charts/mongodb/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: poke-mongodb
+  namespace: production
+  labels:
+    app.kubernetes.io/name: mongodb
+    helm.sh/chart: mongodb-11.1.10
+    app.kubernetes.io/instance: poke
+    app.kubernetes.io/managed-by: Helm
+secrets:
+  - name: poke-mongodb
+---
+# Source: poke-api/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: poke-poke-api
+  labels:
+    helm.sh/chart: poke-api-1.0.2
+    app.kubernetes.io/name: poke-api
+    app.kubernetes.io/instance: poke
+    app.kubernetes.io/version: "1.1.4"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: poke-api/charts/mongodb/templates/standalone/pvc.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: poke-mongodb
+  namespace: production
+  labels:
+    app.kubernetes.io/name: mongodb
+    helm.sh/chart: mongodb-11.1.10
+    app.kubernetes.io/instance: poke
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: mongodb
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "8Gi"
+---
+# Source: poke-api/charts/mongodb/templates/standalone/svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: poke-mongodb
+  namespace: production
+  labels:
+    app.kubernetes.io/name: mongodb
+    helm.sh/chart: mongodb-11.1.10
+    app.kubernetes.io/instance: poke
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: mongodb
+spec:
+  type: ClusterIP
+  ports:
+    - name: mongodb
+      port: 27017
+      targetPort: mongodb
+      nodePort: null
+  selector:
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/instance: poke
+    app.kubernetes.io/component: mongodb
+---
+# Source: poke-api/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: poke
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: poke-api
+    app.kubernetes.io/version: 1.1.4
+    helm.sh/chart: poke-api-1.0.2
+  name: poke-poke-api
+spec:
+  ports:
+  - name: poke-api
+    port: 3000
+    protocol: TCP
+    targetPort: 3000
+  selector:
+    app.kubernetes.io/instance: poke
+    app.kubernetes.io/name: poke-api
+  type: ClusterIP
+---
+# Source: poke-api/charts/mongodb/templates/standalone/dep-sts.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: poke-mongodb
+  namespace: production
+  labels:
+    app.kubernetes.io/name: mongodb
+    helm.sh/chart: mongodb-11.1.10
+    app.kubernetes.io/instance: poke
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: mongodb
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mongodb
+      app.kubernetes.io/instance: poke
+      app.kubernetes.io/component: mongodb
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mongodb
+        helm.sh/chart: mongodb-11.1.10
+        app.kubernetes.io/instance: poke
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: mongodb
+    spec:
+
+      serviceAccountName: poke-mongodb
+      affinity:
+        podAffinity:
+
+        podAntiAffinity:
+
+        nodeAffinity:
+
+      securityContext:
+        fsGroup: 1001
+        sysctls: []
+      containers:
+        - name: mongodb
+          image: docker.io/bitnami/mongodb:4.4.13-debian-10-r52
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          env:
+            - name: BITNAMI_DEBUG
+              value: "false"
+            - name: MONGODB_EXTRA_USERNAMES
+              value: "poke-api"
+            - name: MONGODB_EXTRA_DATABASES
+              value: "poke-api"
+            - name: MONGODB_EXTRA_PASSWORDS
+              valueFrom:
+                secretKeyRef:
+                  name: poke-api-mongodb
+                  key: mongodb-passwords
+            - name: MONGODB_ROOT_USER
+              value: "root"
+            - name: MONGODB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: poke-api-mongodb
+                  key: mongodb-root-password
+            - name: ALLOW_EMPTY_PASSWORD
+              value: "no"
+            - name: MONGODB_SYSTEM_LOG_VERBOSITY
+              value: "0"
+            - name: MONGODB_DISABLE_SYSTEM_LOG
+              value: "no"
+            - name: MONGODB_DISABLE_JAVASCRIPT
+              value: "no"
+            - name: MONGODB_ENABLE_JOURNAL
+              value: "yes"
+            - name: MONGODB_ENABLE_IPV6
+              value: "no"
+            - name: MONGODB_ENABLE_DIRECTORY_PER_DB
+              value: "no"
+          ports:
+            - name: mongodb
+              containerPort: 27017
+          livenessProbe:
+            exec:
+              command:
+                - mongo
+                - --disableImplicitSessions
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - bash
+                - -ec
+                - |
+                  # Run the proper check depending on the version
+                  [[ $(mongo --version | grep "MongoDB shell") =~ ([0-9]+\.[0-9]+\.[0-9]+) ]] && VERSION=${BASH_REMATCH[1]}
+                  . /opt/bitnami/scripts/libversion.sh
+                  VERSION_MAJOR="$(get_sematic_version "$VERSION" 1)"
+                  VERSION_MINOR="$(get_sematic_version "$VERSION" 2)"
+                  VERSION_PATCH="$(get_sematic_version "$VERSION" 3)"
+                  if [[ "$VERSION_MAJOR" -ge 4 ]] && [[ "$VERSION_MINOR" -ge 4 ]] && [[ "$VERSION_PATCH" -ge 2 ]]; then
+                      mongo --disableImplicitSessions $TLS_OPTIONS --eval 'db.hello().isWritablePrimary || db.hello().secondary' | grep -q 'true'
+                  else
+                      mongo --disableImplicitSessions $TLS_OPTIONS --eval 'db.isMaster().ismaster || db.isMaster().secondary' | grep -q 'true'
+                  fi
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+          resources:
+            limits: {}
+            requests: {}
+          volumeMounts:
+            - name: datadir
+              mountPath: /bitnami/mongodb
+              subPath:
+      volumes:
+        - name: datadir
+          persistentVolumeClaim:
+            claimName: poke-mongodb
+---
+# Source: poke-api/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: poke
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: poke-api
+    app.kubernetes.io/version: 1.1.4
+    helm.sh/chart: poke-api-1.0.2
+  name: poke-poke-api
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: poke
+      app.kubernetes.io/name: poke-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: poke
+        app.kubernetes.io/name: poke-api
+    spec:
+      containers:
+      - env:
+        - name: POKE_SVC_PORT
+          value: "3000"
+        - name: POKE_APP_NAME
+          value: poke-api
+        - name: POKE_RELEASE_NAME
+          value: poke
+        - name: POKE_RELEASE_NAMESPACE
+          value: production
+        - name: POKE_MONGODB_PORT
+          value: "27017"
+        - name: POKE_MONGODB_DATABASE
+          value: poke-api
+        - name: POKE_MONGODB_USERNAME
+          value: poke-api
+        - name: POKE_MONGODB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: mongodb-passwords
+              name: poke-api-mongodb
+        - name: POKE_DEBUG
+          value: "true"
+        image: curioushuman/poke-api:1.1.4
+        imagePullPolicy: IfNotPresent
+        name: poke-api
+        ports:
+        - containerPort: 3000
+          name: poke-api
+          protocol: TCP
+        resources: {}
+        securityContext: {}
+      securityContext: {}
+      serviceAccountName: poke-poke-api
+---
+# Source: poke-api/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+  labels:
+    app.kubernetes.io/instance: poke
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: poke-api
+    app.kubernetes.io/version: 1.1.4
+    helm.sh/chart: poke-api-1.0.2
+  name: poke-poke-api
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: poke.dev
+    http:
+      paths:
+      - backend:
+          service:
+            name: poke-poke-api
+            port:
+              number: 3000
+        path: /api/?(.*)
+        pathType: Prefix
+---
+# Source: poke-api/templates/secrets/poke-api-mongodb.yaml
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: poke-api-mongodb
+  namespace: poke-dev
+spec:
+  encryptedData:
+    mongodb-passwords: AgCFeGIE3RcU/jOZIYj635K0k9sMPDIje/jw5WXroPqanwM0zEpzJm6+mylyQ/DyZ7recT2fee5hK6rfslgkOfXRUt9+kBzFzSFR2jwZg9wBqQSdf9+r8hm89VBsaClmFDPjp0RR8Sn2ENNULsTkMvgbrx9mHUJDlJMVDJtwQo19/dYJix3mON1XnbXxOSlCnQs8N4+SeX2IoW86i3uLcHjc8mexOh5XsGEUwpggYBeMoAgQRCI205H+UHPUZXY+aT0g4/bu4XrtuBBi+QOr0RDEPqv5bDo7U0kImu9TqmU7mcLz6wDJU3uF4CpkeNHqeSKlYMhb8KC1bd2hcS7CQPRfopz+aQz4Cals3/pyovb0ke9ZP10TcQ4dbNmeZwXFmICGKX543ZLjTasEgafen/gcGR72LoNxg+sacDtE8fhhEN9QE5+agyIF6Dn8wWodF0OOvIYR+8/dV0dkyTohSIU0c62pJIEVCN07EaWB2KQdNYpAoGV1OLxNVvQOKOZButtv7IOheNJkEjKdBerkGDGeQU+4yn7FO5TVV97roobO99PWIkAev2/1eOmFbOiHNIaFErCOtzBlZzSPZH/OR+cYrhfUKO3FoCFHddBEbjbMRu/dDy0c4aYcGggs9HCr3y7+kB8UZJViHcHucvRuW/1ZqbOJuEb8hYKu0Qc3DxxWc9l4l5dj5UoQWtQQIKWkHS9iNBS8hQYkauW1hRbgq5PFcg==
+    mongodb-replica-set-key: AgCEXa5CUYOX69TQtqmeJ5zBesKaai+i8EJg7HE6UwX2s6hocSQ6ZPkfw87ivnTJB00B3G5vHxr1/7TIbBeHHbClPN24DnAfSSEOP/UzhH+Lc4GnfNT11jUq8a4ENh/mGDBhILNcrHFqb1XilFaTGv3fe37rGiyS8RqyUDoHl4Huo+rxYzdJL9msU/ouBWpwYxtZaKExZZXXUunocyvD8N1W+LvG1bzV3YDOvOioHribZ6bcMFlGIqORQLiSiMtllDa0DIc6mGaLj49e2ab2lPdTUSyt9XMOgxNY5Ef73fVHPZDmIV+l+4bVPBy5VSFpju9kpkvs+DaHysajqHPogD5rKQZGeuUjNZ8upAS9NilzY6rdSgm8Nh8I+u3Xtl5ske0LSrLpy/5T5KipDREEJ+SrBoU1opXlr6mKM+eCuiM9b5x7gZLxJZwQcr1lOe3IaJAOHi3LpwiqSdDqX/UEEW188yO96HMuJuKXUgkyLIJxjccVj3tBYpc9U7ByHObHtCXI8bP3C3ELqORwTVCJse842RvZJMuoK6L6d6KFXdlMsqcn24d8/hEBeaPo3Eqqzir3BmuXHHOkuuT69mlgN4HIp/hr4sfqKEGOhuZlVmGTi+MU4ffCnBNlVtF/qqUXBeKS0zrwdrpD1xbd3eI2QYwPWH8u4/AguSW+WkLBDEj+3mrbB240vTQ3XezCC1E9Cj44Kl6B6IoHbdqVPsnKKaoEHSeqgRqisR22F0iCCHI8drUJAsWOTyhH9FYn6A==
+    mongodb-root-password: AgAyHYvc99Kr7Dav4QucXWX1IDFd3dtdJb3vOnBEENihRBTwCM7l89tRFS2+05usngn7RGA+VRMR7cEMMsUe+Wi1GqGggVLPNNSSYg3fGOMVSlu9TVL+AxnONhGJBGZSXjM5HmxGgA+meDE0qZpIu2aJssTg9g+KIlAqgu0CXbJxAIdPkq0p4Ibqh0FyQkDvOJ+WfFII0PwOTklS6MyjtnIReUXEX7PJF/WcYpm8nqdeZIHf4i7fRoZp3ZlxxTUlHlglxQbyhiPuDcVKaSi2QSJWgms0xgHivt63GWfsMpcs8CkBqy/c7g2GBT4P+2QKNcFiCG4PIxh+3qGLx1/xN/xNif1Hk4qcn5TU2GU+WIj04AxdAL/mCHawznIvcaeOEnveNe7yJh9t4jYJJhbHgaKp6Z2EWE5uEP1WtJPqdv3VnSupkWyGkbBAuyv1IPxj58l9gpjRfguIYqfLO2ORngn3RueAvOoJ52Yo6pbwDhNIKPuly03rchlLuiR8JCjNAKWwuTbeuL45d360v+5fikH8DMbI/2EOOvSkuGMjKCIgT1EbBnztycgs00KeLuoIbYAuS7+z4Cjxn/FtluefpM8fJR99ydozVmEBcThNW60GnicuFpccYhKynT56bh6C0j9bUuf5+ICaGtMUNhaNd2srVmWfHyChk5/9TqTwFl3rkxUs7rnDr4PlYroaizCTStueaNzjGZQdRezpaoPOIU8O
+  template:
+    data: null
+    metadata:
+      creationTimestamp: null
+      name: poke-api-mongodb
+      namespace: poke-dev

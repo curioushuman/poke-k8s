@@ -1,0 +1,3 @@
+{{- include "poke-lib.service" (list . "poke-api.service") -}}
+{{- define "poke-api.service" -}}
+{{- end -}}

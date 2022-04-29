@@ -1,0 +1,104 @@
+# Must set global object
+# Just to make life in the templates a little bit less verbose
+global: {}
+
+local:
+  debug: true
+
+# Set to zero to ignore
+replicaCount: 0
+
+image:
+  repository: curioushuman/poke-web
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# * NOTE: at this point, if you want to use ingress you need to use this port
+service:
+  type: ClusterIP
+  port: 3000
+  portName: poke-web
+  targetPort: 3000
+  protocol: TCP
+
+# OR define an optional ports array
+# TODO - utilise in ingress
+# ports: [] # Use this if you want to remove this array
+ports:
+  - name: poke-web
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+  hosts:
+    # ! Updated in kustomization
+    # - host: poke-web.curioushuman.com.au
+    - host: poke-web.dev
+      paths:
+        - path: /?(.*)
+          pathType: Prefix
+  tls: []
+  # ! Added with kustomization
+  # tls:
+  #  - secretName: letsencrypt-poke-secret
+  #    hosts:
+  #      - poke-web.curioushuman.com.au
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# Unused values
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
