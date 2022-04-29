@@ -4,6 +4,18 @@ This is for a personal project, so the README is largely geared towards myself (
 
 **Note:** I've tried to keep the key instructions brief, and to the point. Where decisions have been made, or further information is available I've (for now) moved it to the bottom in an Appendix. e.g. why there is mix of Helm & Kustomize is answered at the bottom rather than in situ. HTH.
 
+## Status
+
+Not quite production ready, outstanding:
+
+* ArgoCD having TLS issues
+* Argo Workflows SSO setup
+* Argo Workflows themselves
+
+# Setup - shortcut
+
+TBC.
+
 # Setup - Software
 
 *Apologies:* this is directed towards those on MacOS.
@@ -136,7 +148,7 @@ $ helm dep update infra/sealed-secrets
 $ helm upgrade --install sealed-secrets infra/sealed-secrets  \
   --namespace argocd \
   --create-namespace \
-  -f infra/sealed-secrets/values.yaml
+  -f infra/sealed-secrets/values-local.yaml
 # Check install was successful
 $ kubectl get all -n argocd
 ```
@@ -257,13 +269,14 @@ Namespace and paths for staging and production are as follows:
 
 ## Configure local domain
 
-Local k8s configuration uses *poke.dev* in it's configurations. You'll need to tell your computer that this points at *localhost*.
+Local k8s configuration uses *poke-\*.dev* in it's configurations. You'll need to tell your computer that this points at *localhost*.
 
 ```bash
 # Edit your hosts file
 $ sudo vim /etc/hosts
-# Add the following line (without the #)
-# 127.0.0.1 poke.dev
+# Add the following lines (without the #)
+# 127.0.0.1 poke-web.dev
+# 127.0.0.1 poke-api.dev
 ```
 
 # Development
