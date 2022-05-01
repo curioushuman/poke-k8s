@@ -1,8 +1,12 @@
-# poke Kubernetes
+# Poke Kubernetes
+
+The K8s accompaniment to [Pok-E-Dentifier](https://github.com/curioushuman/pok-e-dentifier).
+
+## Notes
 
 This is for a personal project, so the README is largely geared towards myself (or future team members). If you find this useful, hooray, I hope I've kept the documentation generic enough you can make sense of it.
 
-**Note:** I've tried to keep the key instructions brief, and to the point. Where decisions have been made, or further information is available I've (for now) moved it to the bottom in an Appendix. e.g. why there is mix of Helm & Kustomize is answered at the bottom rather than in situ. HTH.
+I've tried to keep the key instructions brief, and to the point. Where decisions have been made, or further information is available I've (for now) moved it to the bottom in an Appendix. e.g. why there is mix of Helm & Kustomize is answered at the bottom rather than in situ. HTH.
 
 ## Status
 
@@ -11,6 +15,29 @@ Not quite production ready, outstanding:
 * ArgoCD having TLS issues
 * Argo Workflows SSO setup
 * Argo Workflows themselves
+
+## Organisation of charts/manifests
+
+### core
+
+i.e. what we're here to work on, the project itself.
+
+### git-ops
+
+This is where we keep our Argo configuration i.e. projects, apps, etc.
+
+### infra
+
+Everything else that is required:
+
+- To get the project FROM development TO production
+- AND keep it there
+
+Examples include:
+
+- The full Argo suite; CD, Events, Workflows
+- Ingress configuration
+- Prometheus & Grafana
 
 # (Simple) Setup
 
@@ -35,7 +62,95 @@ $ sudo vim /etc/hosts
 # 127.0.0.1 poke-api.dev
 ```
 
+# Troubleshooting
+
+I've popped this section here as it is relevant whether you're doing *simple* or *complete* setup (below).
+
+## Notes
+
+Where I have used `-n poke-dev` (local), use the relevant namespace for the cluster you're working in e.g. `staging`, `production`, `your-namespace`.
+
+## Useful kubectl commands
+
+The following commands can be quite useful to troubleshoot:
+
+```bash
+# Check on all the things
+$ kubectl get all -n poke-dev
+
+# Check on a specific thing
+# kubectl describe <resource_name> <specific_resource_name> -n poke-dev
+$ kubectl describe pod poke-api-55c76f6f7b-f769l -n poke-dev
+```
+
+## Logging K8s
+
+Use the following to review logs for your deployed pods:
+
+```bash
+# Review logs for your pods
+$ kubectl logs deployment/poke-api -n poke-dev
+$ kubectl logs deployment/poke-web -n poke-dev
+
+# Review logs for sealed secrets
+# first get the generated pod name for sealed secrets controller
+$ kubectl get pods -n poke-dev
+# Then run logs
+$ kubectl logs -f poke-sealed-secrets-<generated_name> -n poke-dev
+
+# Review logs for ingress
+# first get the generated pod name for ingress controller
+$ kubectl get pods
+# Then run logs
+$ kubectl logs poke-nginx-ingress-<generated_name>
+```
+
+## Shell into a pod/container
+
+Container and pod can be used synonymously in this instance as I only ever have one container within a pod.
+
+```bash
+# list your pods
+$ kubectl get pods -n poke-dev
+# OR all the things, and look at the pods list
+$ kubectl get all -n poke-dev
+# kubectl exec --stdin --tty -n <namespace> <pod_name> -- /bin/sh
+kubectl exec --stdin --tty -n poke-dev poke-web-84ffd58b87-mhp8d -- /bin/sh
+```
+
+## Specific k8s issues
+
+**Hot tip:** [Lens IDE](https://k8slens.dev/desktop.html) is super useful; a lovely GUI to review status of your various clusters:
+
+### Missing MongoDb sealed secrets
+
+You'll notice your api and api-mongodb pods won't start, and they'll show `CreateContainerConfigError` as their status. If you review the logs of these pods you might see something like:
+
+```bash
+Error from server (BadRequest): container pod waiting to start: CreateContainerConfigError
+```
+
+This means the sealed secrets for MongoDb are either missing or not aligned with the existing setup. Re-create them using the commands found in the Sealed Secrets section below.
+
+### Ingress issues
+
+**Error obtaining Endpoints for Service**
+
+Discovered by looking at ingress logs (see logging k8s). Then reviewing endpoints:
+
+```bash
+$ kubectl get endpoints -n <namespace>
+```
+
+### Annoying situations to be aware of
+
+- Ingress load balancer service stuck in pending
+  - Restart docker for desktop to fix this
+  - https://github.com/kubernetes/ingress-nginx/issues/7686#issuecomment-991761784
+
 # (Complete) Setup - Software
+
+This is for those who would like to work on or extend this repo.
 
 *Apologies:* this is directed towards those on MacOS.
 
@@ -60,7 +175,7 @@ $ brew install kubeseal
 $ brew install kustomize
 ```
 
-# Setup K8s
+# (Complete) Setup K8s
 
 ## Repos
 
@@ -255,11 +370,41 @@ $ kubectl apply -f git-ops/projects.yaml
 $ kubectl apply -f git-ops/apps.yaml
 ```
 
-# Setup - other
+# Develop / extend
 
-## Create your sealed secrets for MongoDb
+## Running locally
 
-You need to create separate secrets for local, staging and production as sealed-secrets hash is tied to the namespace. Use the below as the basis, and update the namespace and the filename for the three versions:
+We use Skaffold to run as we develop the apps this k8s ecosystem supports. Instructions, install and develop, can be found in the [associated app](https://github.com/curioushuman/pok-e-dentifier) repo.
+
+## Developing locally
+
+We use Helm for our custom k8s repos. TBC.
+
+## Updating configuration for third party apps
+
+If we need to make changes to any of the third party app configuration we need to first test these changes locally, then in staging (when such a thing is made possible), before we move them into production. Update the relevant `<chart>/values-local.yaml` and upgrade locally using the following commands; using ingress as an example:
+
+```bash
+# Make sure you're in the correct context
+$ kubectl config use-context <dev_context_name>
+# Update dependencies
+$ helm dep update infra/ingress
+# Update ingress with custom settings for local
+$ helm upgrade ingress-nginx infra/ingress-nginx  \
+  --namespace ingress-nginx \
+  -f infra/ingress-nginx/values-local.yaml
+```
+
+Make sure everything works, and then:
+
+- Copy these changes over to `values.yaml` (if not already present)
+- Use CI (below) to promote changes to staging environment
+
+## Creating Sealed Secrets
+
+This repo comes equipped with Sealed Secrets for MongoDb; local, staging and production. If you require any further Sealed Secrets, e.g. if you add another DB, then you will need to create your own using the below process.
+
+**Important note:** You need to create separate secrets for local, staging and production as sealed-secrets hash is tied to the namespace. Use the below as the basis, and update the namespace and the filename for the three versions:
 
 ```bash
 # MongoDb sealed secret for local
@@ -286,93 +431,9 @@ Namespace and paths for staging and production are as follows:
   - production
   - ./core/poke-api/overlays/production/poke-api-mongodb.production.yaml
 
-# Development
-
-*Note:* where I have used `-n poke-dev`, use the relevant namespace for the cluster you're working in e.g. `staging`, `production`, `your-namespace`
-
-## Skaffold & Helm
-
-For local development we use Skaffold, in related app repo, and the Helm version of our K8s configuration.
-
-## Logging K8s
-
-Use the following to review logs for your deployed pods:
-
-```bash
-# Review logs for your pods
-$ kubectl logs deployment/poke-api -n poke-dev
-
-# Review logs for sealed secrets
-# first get the generated pod name for sealed secrets controller
-$ kubectl get pods -n poke-dev
-# Then run logs
-$ kubectl logs -f poke-sealed-secrets-<generated_name> -n poke-dev
-
-# Review logs for ingress
-# first get the generated pod name for ingress controller
-$ kubectl get pods
-# Then run logs
-$ kubectl logs poke-nginx-ingress-<generated_name>
-```
-
-## Troubleshooting K8s
-
-### Lens is super useful
-
-A nice GUI to review status of your various clusters:
-
-* Download [Lens IDE](https://k8slens.dev/desktop.html)
-
-### Useful kubectl commands
-
-The following commands can be quite useful to troubleshoot:
-
-```bash
-# Check on all the things
-$ kubectl get all -n poke-dev
-
-# Check on a specific thing
-# kubectl describe <resource_name> <specific_resource_name> -n poke-dev
-$ kubectl describe pod poke-api-55c76f6f7b-f769l -n poke-dev
-```
-
-### Ingress issues
-
-**Error obtaining Endpoints for Service**
-
-Discovered by looking at ingress logs (see above). Then reviewing endpoints:
-
-```bash
-$ kubectl get endpoints -n <namespace>
-```
-
-### Annoying situations to be aware of
-
-- Ingress load balancer service stuck in pending
-  - Restart docker for desktop to fix this
-  - https://github.com/kubernetes/ingress-nginx/issues/7686#issuecomment-991761784
-
-## Updating configuration for third party apps
-
-If we need to make changes to any of the third party app configuration we need to first test these changes locally, then in staging (when such a thing is made possible), before we move them into production. Update the relevant `<chart>/values-local.yaml` and upgrade locally using the following commands; using ingress as an example:
-
-```bash
-# Make sure you're in the correct context
-$ kubectl config use-context <dev_context_name>
-# Update dependencies
-$ helm dep update infra/ingress
-# Update ingress with custom settings for local
-$ helm upgrade ingress-nginx infra/ingress-nginx  \
-  --namespace ingress-nginx \
-  -f infra/ingress-nginx/values-local.yaml
-```
-
-Make sure everything works, and then:
-
-- Copy these changes over to `values.yaml` (if not already present)
-- Use CI (below) to promote changes to staging environment
-
 # CI/CD
+
+We mainly use Helm to support our custom repos, but Kustomize is better suited for multi-environment management. TBC...
 
 ## From Helm to Kustomize
 
@@ -491,29 +552,6 @@ So, we have the following approach for non-core apps:
   - Configuration defined declaratively
   - Install/update managed by ArgoCD
 
-## Organisation of charts/manifests
-
-### core
-
-i.e. what we're here to work on, the project itself.
-
-### git-ops
-
-This is where we keep our Argo configuration i.e. projects, apps, etc.
-
-### infra
-
-Everything else that is required:
-
-- To get the project FROM development TO production
-- AND keep it there
-
-Examples include:
-
-- The full Argo suite; CD, Events, Workflows
-- Ingress configuration
-- Prometheus & Grafana
-
 ## Why Helm AND Kustomize?
 
 After much research (I wish I'd saved some bookmarks), I've found (as usual) there are many strong opinions touting one over the other, but also more than a few promoting the value of using both. They are both wonderful tools that have a place; sometimes one outdoes the other for particular scenarios so why not employ them for that purpose.
@@ -523,29 +561,6 @@ The over-arching goal is to keep complexity down, so I hope I have managed that 
 ### Update: 2022-04-25
 
 In the end I've gone with Helm more broadly, with Kustomize for environment management mostly.
-
-## Creating new secrets with Kubeseal
-
-**Important note:** you need to create the sealed secret using the sealed secret controller that is going to unseal it. SO for sealed secrets that will be unsealed in the cloud, you need to use the cloud cluster context to run kubeseal (so it uses the cloud based ss-controller).
-
-```bash
-# 1. Deploy sealed secrets (SS) controller to k8s
-# Note: most of the deploy will fail, but SS-c will work
-$ skaffold dev
-# 2. Create a new SS using kubeseal
-# Note: to save a whole lot of hassle, we've set scope to be cluster-wide
-$ kubectl \
-  --namespace poke-dev \
-  create secret generic poke-api-super-secret \
-  --dry-run=client \
-  --from-literal username='jake_blues' \
-  --from-literal password='jolietIsMyName' \
-  --output yaml \
-  | kubeseal \
-  --controller-namespace=argocd \
-  --controller-name=sealed-secrets \
-  --format yaml > path-to-secret-file.yaml
-```
 
 ## Can Helm output multiple YAML files?
 
