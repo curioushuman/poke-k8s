@@ -12,11 +12,30 @@ Not quite production ready, outstanding:
 * Argo Workflows SSO setup
 * Argo Workflows themselves
 
-# Setup - shortcut
+# (Simple) Setup
 
-TBC.
+Just to get things running.
 
-# Setup - Software
+## Local kubernetes
+
+All instructions in this README are based on Docker Desktop. If you use Minikube play around with it as you see fit.
+
+- [Install Docker Desktop](https://docs.docker.com/desktop/mac/install/)
+- [Turn on K8s](https://docs.docker.com/desktop/kubernetes/)
+
+## Configure local domain
+
+Local k8s configuration uses *poke-\*.dev* in it's configurations. You'll need to tell your computer that this points at *localhost*.
+
+```bash
+# Edit your hosts file
+$ sudo vim /etc/hosts
+# Add the following lines (without the #)
+# 127.0.0.1 poke-web.dev
+# 127.0.0.1 poke-api.dev
+```
+
+# (Complete) Setup - Software
 
 *Apologies:* this is directed towards those on MacOS.
 
@@ -266,18 +285,6 @@ Namespace and paths for staging and production are as follows:
 - Production
   - production
   - ./core/poke-api/overlays/production/poke-api-mongodb.production.yaml
-
-## Configure local domain
-
-Local k8s configuration uses *poke-\*.dev* in it's configurations. You'll need to tell your computer that this points at *localhost*.
-
-```bash
-# Edit your hosts file
-$ sudo vim /etc/hosts
-# Add the following lines (without the #)
-# 127.0.0.1 poke-web.dev
-# 127.0.0.1 poke-api.dev
-```
 
 # Development
 
