@@ -50,6 +50,25 @@ All instructions in this README are based on Docker Desktop. If you use Minikube
 - [Install Docker Desktop](https://docs.docker.com/desktop/mac/install/)
 - [Turn on K8s](https://docs.docker.com/desktop/kubernetes/)
 
+## Required Helm repositories
+
+Follow the instructions ([below](#install-helm-repos)) to install Ingress, Sealed Secrets and Bitnami Helm repos.
+
+## Required Kubernetes applications
+
+Follow the instructions ([below](#manually-install-some-applications)) to install [Ingress](#ingress) and [Sealed Secrets](#sealed-secrets) in your local cluster.
+
+## Update helm dependencies
+
+Our custom helm charts have dependencies on other charts. Before they will run we need the latest/pinned versions:
+
+```bash
+# Updates for api
+$ helm dependency update ./core/helm/poke-api
+# Updates for web
+$ helm dependency update ./core/helm/poke-web
+```
+
 ## Configure local domain
 
 Local k8s configuration uses *poke-\*.dev* in it's configurations. You'll need to tell your computer that this points at *localhost*.
@@ -107,7 +126,7 @@ $ kubectl logs poke-nginx-ingress-<generated_name>
 
 ## Shell into a pod/container
 
-Container and pod can be used synonymously in this instance as I only ever have one container within a pod.
+Container and pod can be used synonymously in this instance as I (currently) only ever have one container within a pod.
 
 ```bash
 # list your pods
@@ -122,31 +141,65 @@ kubectl exec --stdin --tty -n poke-dev poke-web-84ffd58b87-mhp8d -- /bin/sh
 
 **Hot tip:** [Lens IDE](https://k8slens.dev/desktop.html) is super useful; a lovely GUI to review status of your various clusters:
 
-### Missing MongoDb sealed secrets
+### MongoDB issues
 
-You'll notice your api and api-mongodb pods won't start, and they'll show `CreateContainerConfigError` as their status. If you review the logs of these pods you might see something like:
+**Missing MongoDb sealed secrets**
+
+You might notice your api and api-mongodb pods won't start, and they'll show `CreateContainerConfigError` as their status. If you review the logs of these pods you might see something like:
 
 ```bash
 Error from server (BadRequest): container pod waiting to start: CreateContainerConfigError
 ```
 
-This means the sealed secrets for MongoDb are either missing or not aligned with the existing setup. Re-create them using the commands found in the Sealed Secrets section below.
+This means the sealed secrets for MongoDb are either missing or not aligned with the existing setup. Re-create them using the commands found in the [Creating Sealed Secrets](#creating-sealed-secrets) section below.
+
+**MongoDB pod stuck in pending**
+
+If you list all pods you might see your storage-provisioner is frozen:
+
+```bash
+$ kubectl get pods -A
+```
+
+Restart Docker for Desktop (DD), if not reset your DD Kubernetes cluster (via DD Settings). If you need to reset, you'll need to [reinstall any k8s applications required locally](#required-kubernetes-applications) and [recreate local sealed secrets](#creating-sealed-secrets).
+
+**MongoDB pod stuck in running, but not ready**
+
+If you're waiting for skaffold dev to finish, try listing your resources to see what's going on:
+
+```bash
+$ kubectl get pods -n poke-dev
+```
+
+You might see your MongoDB pod is running, but not yet ready. Describe the pod to see what's going on:
+
+```bash
+$ kubectl describe pod -n poke-dev poke-api-mongodb-<generated_name>
+```
+
+I never really got to the bottom of this...
 
 ### Ingress issues
 
 **Error obtaining Endpoints for Service**
 
-Discovered by looking at ingress logs (see logging k8s). Then reviewing endpoints:
+Review ingress logs (see [logging k8s](#logging-k8s)) and you'll find an error similar to this. Then double check your endpoints, make sure everything is as it should be:
 
 ```bash
-$ kubectl get endpoints -n <namespace>
+$ kubectl get endpoints -n poke-dev
 ```
 
-### Annoying situations to be aware of
+**Ingress load balancer service stuck in pending**
 
-- Ingress load balancer service stuck in pending
-  - Restart docker for desktop to fix this
-  - https://github.com/kubernetes/ingress-nginx/issues/7686#issuecomment-991761784
+Found by reviewing Ingress resources:
+
+```bash
+$ kubectl get all -n ingress-nginx
+```
+
+Restart docker for desktop to fix this:
+
+- https://github.com/kubernetes/ingress-nginx/issues/7686#issuecomment-991761784
 
 # (Complete) Setup - Software
 
@@ -177,7 +230,7 @@ $ brew install kustomize
 
 # (Complete) Setup K8s
 
-## Repos
+## Install Helm repos
 
 To install each repo, run the following commands:
 
@@ -255,8 +308,10 @@ Already installed in cloud, so you just need to do your dev cluster. Based on th
 Currently `values.yaml` is based on DO recommendation, `values-local.yaml` is more friendly to a local environment. Use the following commands to install [NGINX Ingress chart](https://artifacthub.io/packages/helm/ingress-nginx/ingress-nginx) locally. If you are installing into a cloud based cluster leave out the -f flag.
 
 ```bash
+# Make sure you have the ingress helm repo installed
+$ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 # Make sure you're in the correct context
-$ kubectl config use-context <dev_context_name>
+$ kubectl config use-context docker-desktop
 # Update dependencies
 $ helm dep update infra/ingress-nginx
 # Install ingress via our custom wrapper chart using recommended local settings
@@ -274,8 +329,10 @@ $ helm ls -n ingress-nginx
 Installation in cloud will be managed by ArgoCD, but you'll need this locally for the core applications to function. We install in the `argocd` namespace both locally and in the cloud.
 
 ```bash
+# Make sure you have the sealed secrets helm repo installed
+$ helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
 # Make sure you're in the correct context
-$ kubectl config use-context <dev_context_name>
+$ kubectl config use-context docker-desktop
 # Update dependencies
 $ helm dep update infra/sealed-secrets
 # Install ingress via our custom wrapper chart using recommended local settings
@@ -296,6 +353,7 @@ Installed in the cloud by following DO instructions:
 - [#step-5---configuring-production-ready-tls-certificates-for-nginx](https://github.com/digitalocean/Kubernetes-Starter-Kit-Developers/blob/main/03-setup-ingress-controller/nginx.md#step-5---configuring-production-ready-tls-certificates-for-nginx)
 
 ```bash
+# Make sure you have the Jetstack helm repo installed
 # Make sure you're in the correct context
 $ kubectl config use-context <cloud_context_name>
 # Update dependencies
@@ -326,6 +384,7 @@ This one was tricky, but the result is stored in the values.yaml of our wrapper 
 Install via:
 
 ```bash
+# Make sure you have the argo helm repo installed
 # Make sure you're in the correct context
 $ kubectl config use-context <cloud_context_name>
 # Update dependencies
@@ -568,7 +627,7 @@ Yes, but no. The following outputs to multiple files, but it places them in a di
 
 ```bash
 # From root
-$ helm template poke ./core/helm/poke --skip-tests  -n production --output-dir ./base
+$ helm template poke ./core/helm/poke-api --skip-tests  -n production --output-dir ./base
 ```
 
 It would be nicer if things were in separate files, but Helm doesn't offer anything in core or plugins (apart from the above). The following includes a bash file example, but the comments RE risk of file overwrite are 100% correct. Will look at this another day:

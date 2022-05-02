@@ -17,7 +17,11 @@ Env vars consistent across containers
 {{- if .Values.mongodb }}
 {{- if .Values.mongodb.service }}
 - name: POKE_MONGODB_PORT
+  {{- if .Values.mongodb.service.ports }}
+  value: "{{ .Values.mongodb.service.ports.mongodb }}"
+  {{- else }}
   value: "{{ .Values.mongodb.service.port }}"
+  {{- end -}}
 {{- end -}}
 {{- if .Values.mongodb.auth }}
 - name: POKE_MONGODB_DATABASE

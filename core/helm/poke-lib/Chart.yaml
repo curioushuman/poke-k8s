@@ -2,4 +2,4 @@ apiVersion: v2
 name: poke-lib
 description: Grrrr a copy of RbC-lib, needs to be moved out to a chart museum
 type: library
-version: 0.0.1
+version: 0.0.2

@@ -78,6 +78,7 @@ serviceAccount:
 # TODO - pull sc-db dynamically from umbrella
 # * NOTE: storageClass must be set to "" to use default
 mongodb:
+  architecture: standalone
   global:
     storageClass: ""
   auth:
@@ -89,6 +90,9 @@ mongodb:
     existingSecret: "poke-api-mongodb"
   service:
     port: 27017
+    # Format for ^12.0.0 of bitnami monogoDB chart
+    # ports:
+    #   mongodb: 27017
   # Required to remove problematic affinity settings
   podAntiAffinityPreset: ""
 

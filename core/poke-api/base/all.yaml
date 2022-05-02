@@ -19,10 +19,10 @@ kind: ServiceAccount
 metadata:
   name: poke-poke-api
   labels:
-    helm.sh/chart: poke-api-1.0.2
+    helm.sh/chart: poke-api-0.0.3
     app.kubernetes.io/name: poke-api
     app.kubernetes.io/instance: poke
-    app.kubernetes.io/version: "1.1.4"
+    app.kubernetes.io/version: "0.0.2"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: poke-api/charts/mongodb/templates/standalone/pvc.yaml
@@ -76,8 +76,8 @@ metadata:
     app.kubernetes.io/instance: poke
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: poke-api
-    app.kubernetes.io/version: 1.1.4
-    helm.sh/chart: poke-api-1.0.2
+    app.kubernetes.io/version: 0.0.2
+    helm.sh/chart: poke-api-0.0.3
   name: poke-poke-api
 spec:
   ports:
@@ -120,15 +120,15 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: mongodb
     spec:
-
+      
       serviceAccountName: poke-mongodb
       affinity:
         podAffinity:
-
+          
         podAntiAffinity:
-
+          
         nodeAffinity:
-
+          
       securityContext:
         fsGroup: 1001
         sysctls: []
@@ -215,7 +215,7 @@ spec:
           volumeMounts:
             - name: datadir
               mountPath: /bitnami/mongodb
-              subPath:
+              subPath: 
       volumes:
         - name: datadir
           persistentVolumeClaim:
@@ -229,8 +229,8 @@ metadata:
     app.kubernetes.io/instance: poke
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: poke-api
-    app.kubernetes.io/version: 1.1.4
-    helm.sh/chart: poke-api-1.0.2
+    app.kubernetes.io/version: 0.0.2
+    helm.sh/chart: poke-api-0.0.3
   name: poke-poke-api
 spec:
   selector:
@@ -266,7 +266,7 @@ spec:
               name: poke-api-mongodb
         - name: POKE_DEBUG
           value: "true"
-        image: curioushuman/poke-api:1.1.4
+        image: curioushuman/poke-api:0.0.2
         imagePullPolicy: IfNotPresent
         name: poke-api
         ports:
@@ -288,13 +288,13 @@ metadata:
     app.kubernetes.io/instance: poke
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: poke-api
-    app.kubernetes.io/version: 1.1.4
-    helm.sh/chart: poke-api-1.0.2
+    app.kubernetes.io/version: 0.0.2
+    helm.sh/chart: poke-api-0.0.3
   name: poke-poke-api
 spec:
   ingressClassName: nginx
   rules:
-  - host: poke.dev
+  - host: poke-api.dev
     http:
       paths:
       - backend:
@@ -314,9 +314,9 @@ metadata:
   namespace: poke-dev
 spec:
   encryptedData:
-    mongodb-passwords: AgCFeGIE3RcU/jOZIYj635K0k9sMPDIje/jw5WXroPqanwM0zEpzJm6+mylyQ/DyZ7recT2fee5hK6rfslgkOfXRUt9+kBzFzSFR2jwZg9wBqQSdf9+r8hm89VBsaClmFDPjp0RR8Sn2ENNULsTkMvgbrx9mHUJDlJMVDJtwQo19/dYJix3mON1XnbXxOSlCnQs8N4+SeX2IoW86i3uLcHjc8mexOh5XsGEUwpggYBeMoAgQRCI205H+UHPUZXY+aT0g4/bu4XrtuBBi+QOr0RDEPqv5bDo7U0kImu9TqmU7mcLz6wDJU3uF4CpkeNHqeSKlYMhb8KC1bd2hcS7CQPRfopz+aQz4Cals3/pyovb0ke9ZP10TcQ4dbNmeZwXFmICGKX543ZLjTasEgafen/gcGR72LoNxg+sacDtE8fhhEN9QE5+agyIF6Dn8wWodF0OOvIYR+8/dV0dkyTohSIU0c62pJIEVCN07EaWB2KQdNYpAoGV1OLxNVvQOKOZButtv7IOheNJkEjKdBerkGDGeQU+4yn7FO5TVV97roobO99PWIkAev2/1eOmFbOiHNIaFErCOtzBlZzSPZH/OR+cYrhfUKO3FoCFHddBEbjbMRu/dDy0c4aYcGggs9HCr3y7+kB8UZJViHcHucvRuW/1ZqbOJuEb8hYKu0Qc3DxxWc9l4l5dj5UoQWtQQIKWkHS9iNBS8hQYkauW1hRbgq5PFcg==
-    mongodb-replica-set-key: AgCEXa5CUYOX69TQtqmeJ5zBesKaai+i8EJg7HE6UwX2s6hocSQ6ZPkfw87ivnTJB00B3G5vHxr1/7TIbBeHHbClPN24DnAfSSEOP/UzhH+Lc4GnfNT11jUq8a4ENh/mGDBhILNcrHFqb1XilFaTGv3fe37rGiyS8RqyUDoHl4Huo+rxYzdJL9msU/ouBWpwYxtZaKExZZXXUunocyvD8N1W+LvG1bzV3YDOvOioHribZ6bcMFlGIqORQLiSiMtllDa0DIc6mGaLj49e2ab2lPdTUSyt9XMOgxNY5Ef73fVHPZDmIV+l+4bVPBy5VSFpju9kpkvs+DaHysajqHPogD5rKQZGeuUjNZ8upAS9NilzY6rdSgm8Nh8I+u3Xtl5ske0LSrLpy/5T5KipDREEJ+SrBoU1opXlr6mKM+eCuiM9b5x7gZLxJZwQcr1lOe3IaJAOHi3LpwiqSdDqX/UEEW188yO96HMuJuKXUgkyLIJxjccVj3tBYpc9U7ByHObHtCXI8bP3C3ELqORwTVCJse842RvZJMuoK6L6d6KFXdlMsqcn24d8/hEBeaPo3Eqqzir3BmuXHHOkuuT69mlgN4HIp/hr4sfqKEGOhuZlVmGTi+MU4ffCnBNlVtF/qqUXBeKS0zrwdrpD1xbd3eI2QYwPWH8u4/AguSW+WkLBDEj+3mrbB240vTQ3XezCC1E9Cj44Kl6B6IoHbdqVPsnKKaoEHSeqgRqisR22F0iCCHI8drUJAsWOTyhH9FYn6A==
-    mongodb-root-password: AgAyHYvc99Kr7Dav4QucXWX1IDFd3dtdJb3vOnBEENihRBTwCM7l89tRFS2+05usngn7RGA+VRMR7cEMMsUe+Wi1GqGggVLPNNSSYg3fGOMVSlu9TVL+AxnONhGJBGZSXjM5HmxGgA+meDE0qZpIu2aJssTg9g+KIlAqgu0CXbJxAIdPkq0p4Ibqh0FyQkDvOJ+WfFII0PwOTklS6MyjtnIReUXEX7PJF/WcYpm8nqdeZIHf4i7fRoZp3ZlxxTUlHlglxQbyhiPuDcVKaSi2QSJWgms0xgHivt63GWfsMpcs8CkBqy/c7g2GBT4P+2QKNcFiCG4PIxh+3qGLx1/xN/xNif1Hk4qcn5TU2GU+WIj04AxdAL/mCHawznIvcaeOEnveNe7yJh9t4jYJJhbHgaKp6Z2EWE5uEP1WtJPqdv3VnSupkWyGkbBAuyv1IPxj58l9gpjRfguIYqfLO2ORngn3RueAvOoJ52Yo6pbwDhNIKPuly03rchlLuiR8JCjNAKWwuTbeuL45d360v+5fikH8DMbI/2EOOvSkuGMjKCIgT1EbBnztycgs00KeLuoIbYAuS7+z4Cjxn/FtluefpM8fJR99ydozVmEBcThNW60GnicuFpccYhKynT56bh6C0j9bUuf5+ICaGtMUNhaNd2srVmWfHyChk5/9TqTwFl3rkxUs7rnDr4PlYroaizCTStueaNzjGZQdRezpaoPOIU8O
+    mongodb-passwords: AgC1hRZ2eCACH7gER0gFTPXYI03YHSZRPUnweAh5bNj+E8YyBTO0CR732E4MSjHOnYq2gUudMawcby/tooeyEhPjZocX+eSLNZ6YvsStsbtK4DNTDztHbKVWXA8I0CAxGCxrMktP82xs0PtcFvtX/Jb+VQS2iBGKz2zTx7FtMK3zzGOTAORBHpy4AkhEaxenF/Cc3HwjuByut/s9lissOAB29xx1WpSEuo67y9toNsTFVNVz3Dgo0gz2HhTJkVp5knUxY2D203zNj3f6F1lI6O1WT4i8dvmkJboGH+6ayB8P3BYBL/l7fyPbDHqALSrpoRYg2NLgXxcrM0KfH9H/JIqPCxcm7rQQoUAU4WRLdOOrBlVPeIB4jzZnhjU6emYw1UehQmqDcSrj84+HgF88pt35Oti1W/a+nb2TkrF1rfLSrD9sQLEUf99xNMUTTnGJBk3tNNc168t/C7gNE2HOilf27E11IoIuG9o1kox2PCnpfKgcixedjAeUFDfNmRqNasXF7t/9lAsac+ckV+1XCqz8DlG44HVc8u6/ncCczAJ/Fn3KYxX+OoKL7ONOM316NKVn7XzK/RpRW3Lz35M5pqKKapVCDVcyjDH22KuXfruZRsX8vsbjLlYXWAIOW9dnW77UA14QPi5a5SlA0h/JXlYL3y7uhd7WCbzNko8teobmlifxe47mJAQ8rIgMYLGSAffHoFrFm0UJSwK3kn9O5305QA==
+    mongodb-replica-set-key: AgBz4ZNi9c9z9gDduFK78zJZXiPDc+XeNdwqZdOFs80OXPue4t4N8xBAO4VvCRG2eTLfWarZPzsWWl6DsI1pOhzCih6qJrRrLmcy3QDHmXEVr7JfqcRO68PVWII0mAj+I8L48gu+3PvUJQ6Bpl67a9Kf7gFflXh86Se+vFbpRvRuwCv6itqNXmH77qkjkotAzzZZs51lYxVTIAsukoUfNUxa5azdMvrwydziJXzkVkxyNe28T7y8NhTgkSP2PeGKm4DSJFkAR2IidURPjRAKpWBRLwA6qVSuK8s0SzUxq5+mXX90MzP1Kzh2AMEuqNjAyyxTJSanTa53keY1aj+E0e6X/6CRftOsN7qXdfXdwsoO0hojLAg3CuFFuT8Sud5R1ASeebjxSklUktqEkSwIHK+pzXhts3fDk3YAkWFZY7c3BvaM1afZ2243ExbfQOLm/wZWRr/85yxJZhRCQfwIDdeLRyrJLE1jVmUn9D7tjy4D8ELUwcnZkq+d51OQRO6iz+85Ck8tzDhjWSE+GHb5vd9k9CuE723F0qtB2e1/QdJjCaZEehGOahyWGqvMZz2lyrqSn1DGnsAL6NbdAucoWvO/gg2wQlc8XoaMhzFJduEN0jiMbKbI1oGP8XzY4ap0P1Q8YUj27Ser9eFbMkUsQQi+sqyTSbx4rvWlBxcPK5dMXtLRcTzBfvIqOnv44ZEnjFRuD5uVGKZ4I8y6SZ7/E0xqJ9xJSIf/UdB1rZFAzPG3ZqSHcjla9APzb4nwPA==
+    mongodb-root-password: AgCRH4jVv5MFMfSAr23P5vaEDwMIl6hSakccrNc90pKndCBvQ4iZXElhEoWMsVLhZtDa68iVaR+gRpFZiCyM4Il7O+vgCiCT6IiV+3xV27zR8zL8M8eohUYDIzWCT+dU9yIYdkVwuPaDvLAr925PmaV9GApaRbzXSH9D3HI+x+lLwH9nv8rz883aTEvkN2DkLNKMDiGwbXItaKDacAuPKrHZZ4vZsFZ6J3S9PmQ/kSgiv1M2W5mwUIwJj325bLGVIAGGkjLZJldNiWnvHJZ1IzUn3xpd8WhoLSbvUlsQjQ6d63gJsr6SZuK4ifv6bheTMvwssPZ8VOqiFuKvCAGslKXxGX+v6FCjDoBSxiF0ms3oN1NSPparmWYjQBCMpCqMFnFjdcsXeIC6dWqh/WJhnIqAfIU4Z0hES0fsKuYp48POkOlBR7LWkSDOU0LBQK4x/DYxsOhyAq1LpkYdzw7DzrO74pqXcs/CH4CxNz6pIZNgZgPiuAlwXxwBaG32pO6bzZKExLaa+DlW6AtYugHZ47kznAZoOu0PKWiKUu+XfI/iJiWarGm+k9f9YkIM42qhGh+RV6o8qW7GPVJhHcdzJYXkp4GXSFIg0P2cmcs27C9beCrelaLwmjN+ShizHZ5XUHvGt+T6ztZIX95t2IVDN7dL5tUusC6VWc2cV4iT86U9hSdWhhmf8N1bfJUk5+b/8EP4A9HXJaZ3FItu3H//i/XZ
   template:
     data: null
     metadata:
