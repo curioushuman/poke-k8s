@@ -177,7 +177,7 @@ You might see your MongoDB pod is running, but not yet ready. Describe the pod t
 $ kubectl describe pod -n poke-dev poke-api-mongodb-<generated_name>
 ```
 
-I never really got to the bottom of this...
+This seems to be a new issue with bitnami/mongodb@12.0.0. For the time being I've reverted to 11.10.0 and will review this further when there is time.
 
 ### Ingress issues
 
