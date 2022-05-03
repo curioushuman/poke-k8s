@@ -161,7 +161,7 @@ If you list all pods you might see your storage-provisioner is frozen:
 $ kubectl get pods -A
 ```
 
-Restart Docker for Desktop (DD), if not reset your DD Kubernetes cluster (via DD Settings). If you need to reset, you'll need to [reinstall any k8s applications required locally](#required-kubernetes-applications) and [recreate local sealed secrets](#creating-sealed-secrets).
+Try restarting Docker Desktop (DD), if not reset your DD Kubernetes cluster (via DD Settings). If you need to reset, you'll need to [reinstall any k8s applications required locally](#required-kubernetes-applications) and [recreate local sealed secrets](#creating-sealed-secrets).
 
 **MongoDB pod stuck in running, but not ready**
 
@@ -200,6 +200,37 @@ $ kubectl get all -n ingress-nginx
 Restart docker for desktop to fix this:
 
 - https://github.com/kubernetes/ingress-nginx/issues/7686#issuecomment-991761784
+
+**Connection refused (and things)**
+
+If you see an error like this when running skaffold:
+
+```bash
+Error: INSTALLATION FAILED: Internal error occurred: failed calling webhook "validate.nginx.ingress.kubernetes.io": Post "https://ingress-nginx-controller-admission.ingress-nginx.svc:443/networking/v1/ingresses?timeout=10s": dial tcp 10.96.224.41:443: connect: connection refused
+```
+
+Have a look at all the resources:
+
+```bash
+$ kubectl get all -A
+```
+
+You might see:
+
+- multiple ingress-nginx controllers in various statuses
+- None running, one pending
+
+If this is the case, try `skaffold dev` again once that ingress-nginx controller is running.
+
+You might see various things have gone [skew-whiff](https://www.merriam-webster.com/dictionary/skew-whiff), such as:
+
+- Numerous evicted ingress-nginx controllers
+- storage-provisioner in error
+- vpnkit-controller in ContainerStatusUnknown
+
+If this is the case try restarting Docker Desktop (DD), if not reset your DD Kubernetes cluster (via DD Settings). If you need to reset, you'll need to [reinstall any k8s applications required locally](#required-kubernetes-applications) and [recreate local sealed secrets](#creating-sealed-secrets).
+
+**TODO:** there must be a better way.
 
 # (Complete) Setup - Software
 
